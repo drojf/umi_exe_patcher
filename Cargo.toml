@@ -1,0 +1,7 @@
+[package]
+name = "umi_exe_patcher"
+version = "0.1.0"
+authors = ["drojf <drojfjord@gmail.com>"]
+
+[dependencies]
+byteorder = "*"
