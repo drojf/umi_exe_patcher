@@ -5,3 +5,4 @@ authors = ["drojf <drojfjord@gmail.com>"]
 
 [dependencies]
 byteorder = "*"
+clap = "*"

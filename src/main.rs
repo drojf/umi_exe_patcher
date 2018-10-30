@@ -1,13 +1,15 @@
 extern crate byteorder;
 mod util;
 mod umineko_change_resolution;
+extern crate clap;
 
 use umineko_change_resolution::{ScreenResolution, DimensionsWindows, GetDimensionsSearchString};
 use std::fs::File;
 use std::io::prelude::*;
-
-
+use std::str::FromStr;
 use util::*;
+
+use clap::{Arg, App, SubCommand};
 
 //patch umineko .exe to load 0.u instead of 0.utf
 fn umineko_patch_load_0u(file_as_bytes : &mut Vec<u8>)
@@ -32,9 +34,86 @@ fn umineko_change_width<T: GetDimensionsSearchString>(file_as_bytes : &mut Vec<u
 
 fn main()
 {
-    println!("Hello, world!");
+    println!("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+    println!("~~~~~ NOTE: run [umi_exe_patcher -h] to see all arguments ~~~~~");
+    println!("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
 
-    let mut file_as_bytes = read_file_as_bytes("test.txt").expect("could open input file");
+    let matches = App::new("My Super Program")
+                          .version("1.0")
+                          .author("some guy called drojf")
+                          .about("Does awesome things")
+                                  //specify input and output files
+                          .arg(Arg::with_name("input")
+                               .long("input")
+                               .value_name("FILE")
+                               .help("Sets the input file")
+                               .takes_value(true)
+                               .required(true))
+                          .arg(Arg::with_name("output")
+                               .long("output")
+                               .value_name("FILE")
+                               .help("Sets the output file")
+                               .takes_value(true)
+                               .required(true))
+
+                          .subcommand(SubCommand::with_name("resolution")
+                                      .about("Modifies the resolution of the game")
+                                      //specify resolution to search for
+                                      .arg(Arg::with_name("search_resolution")
+                                           //.multiple(true)
+                                           .long("search")
+                                           .help("resolution to be replaced")
+                                           .value_names(&["WIDTH", "HEIGHT"])
+                                           .takes_value(true)
+                                           .required(true))
+
+                                      .arg(Arg::with_name("replacement_resolution")
+                                           //.multiple(true)
+                                           .long("replace")
+                                           .help("new resolution")
+                                           .value_names(&["WIDTH", "HEIGHT"])
+                                           .takes_value(true)
+                                           .required(true))
+                          )
+                          .get_matches();
+
+
+
+    let input_file = matches.value_of("input").expect("Missing input file argument");
+    let output_file = matches.value_of("output").expect("Missing output file argument");
+
+    match matches.subcommand_matches("resolution")
+    {
+        Some(submatches) => {
+            let searches : Vec<_> = submatches.values_of("search_resolution").unwrap().collect();
+
+            let search = ScreenResolution::new(
+                u32::from_str(searches[0]).expect("Search width could not be parsed"),
+                u32::from_str(searches[1]).expect("Search height could not be parsed")
+            );
+
+            let replacements : Vec<_> = submatches.values_of("replacement_resolution").unwrap().collect();
+
+            let replace = ScreenResolution::new(
+                u32::from_str(replacements[0]).expect("Replace width could not be parsed"),
+                u32::from_str(replacements[1]).expect("Replace height could not be parsed")
+            );
+
+            println!("Performing Resolution Patch: [{}x{}] -> [{}x{}]...", search.width, search.height, replace.width, replace.height);
+
+            //let search_width = submatches.value_of("search_width").expect("Missing search width argument");
+            //let search_height = submatches.value_of("search_height").expect("Missing search height argument");
+
+            //let replacement_width = submatches.value_of("replacement_width").expect("Missing replacement_width argument");
+            //let replacement_height = submatches.value_of("replacement_height").expect("Missing input replacement_height argument");
+        }
+        None => {}
+    }
+
+
+
+
+    let mut file_as_bytes = read_file_as_bytes(input_file).expect("could open input file");
 
     //let search_string = b"0.utf";
     //let replace_string = b"asdff";
