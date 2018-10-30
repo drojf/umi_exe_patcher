@@ -3,10 +3,12 @@ mod util;
 mod umineko_change_resolution;
 extern crate clap;
 
-use umineko_change_resolution::{ScreenResolution, DimensionsWindows, GetDimensionsSearchString};
+use umineko_change_resolution::{ScreenResolution, DimensionsWindows, DimensionsMac, GetDimensionsSearchString};
 use std::fs::File;
 use std::io::prelude::*;
 use std::str::FromStr;
+use std::path::Path;
+use std::ffi::OsStr;
 use util::*;
 
 use clap::{Arg, App, SubCommand};
@@ -55,7 +57,7 @@ fn main()
                                .help("Sets the output file")
                                .takes_value(true)
                                .required(true))
-
+                           //Patch Resolution subcommand:
                           .subcommand(SubCommand::with_name("resolution")
                                       .about("Modifies the resolution of the game")
                                       //specify resolution to search for
@@ -82,6 +84,20 @@ fn main()
     let input_file = matches.value_of("input").expect("Missing input file argument");
     let output_file = matches.value_of("output").expect("Missing output file argument");
 
+    //determine if the input file is a Windows or Mac/linux file by file extension
+    let file_extension = Path::new(input_file).extension().and_then(OsStr::to_str);
+    let is_windows = match file_extension {
+        Some(extension) => extension == "exe",
+        None => false,
+    };
+
+    println!("Is Windows:{} (file ext:{:?})", is_windows, file_extension);
+
+    let mut file_as_bytes = read_file_as_bytes(input_file).expect("could open input file");
+
+    println!("File size is {} bytes", file_as_bytes.len());
+
+    //Execute subcommands:
     match matches.subcommand_matches("resolution")
     {
         Some(submatches) => {
@@ -100,46 +116,16 @@ fn main()
             );
 
             println!("Performing Resolution Patch: [{}x{}] -> [{}x{}]...", search.width, search.height, replace.width, replace.height);
+            if is_windows {
+                umineko_change_width::<DimensionsWindows>(&mut file_as_bytes, &search, &replace);
+            } else {
+                umineko_change_width::<DimensionsMac>(&mut file_as_bytes, &search, &replace);
+            }
 
-            //let search_width = submatches.value_of("search_width").expect("Missing search width argument");
-            //let search_height = submatches.value_of("search_height").expect("Missing search height argument");
-
-            //let replacement_width = submatches.value_of("replacement_width").expect("Missing replacement_width argument");
-            //let replacement_height = submatches.value_of("replacement_height").expect("Missing input replacement_height argument");
         }
         None => {}
     }
 
-
-
-
-    let mut file_as_bytes = read_file_as_bytes(input_file).expect("could open input file");
-
-    //let search_string = b"0.utf";
-    //let replace_string = b"asdff";
-
-    /*let result = find_and_replace_once(&mut file_as_bytes, search_string, replace_string);
-
-    match(result)
-    {
-        Err(str) => {
-            println!("Error - couldn't perform replacement!: {}", str);
-
-        },
-        Ok(value) => {
-            let mut output_file = File::create("output.txt").expect("couldn't open output file");
-            output_file.write_all(&file_as_bytes).expect("couldn't write to output file");
-
-        }
-    }*/
-
-    //umineko_patch_load_0u(&mut file_as_bytes);
-
-    let source_dim = ScreenResolution::new(1280, 960);
-    let target_dim = ScreenResolution::new(1920, 1080);
-
-    umineko_change_width::<DimensionsWindows>(&mut file_as_bytes, &source_dim, &target_dim);
-
-    let mut output_file = File::create("output.txt").expect("couldn't open output file");
+    let mut output_file = File::create(output_file).expect("couldn't open output file");
     output_file.write_all(&file_as_bytes).expect("couldn't write to output file");
 }
