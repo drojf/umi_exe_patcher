@@ -21,9 +21,9 @@ pub trait GetDimensionsSearchString {
     fn get_width_bytes(width: u32) -> Vec<u8>;
 }
 
-pub struct DimensionsWindows {}
+pub struct DimensionsWindowsLinux {}
 
-impl DimensionsWindows {
+impl DimensionsWindowsLinux {
     fn get_dimensions_search_string(magic: u8, value: u32) -> Vec<u8>
     {
         let mut bytes: [u8; 5] = [magic, 0, 0, 0, 0];
@@ -32,15 +32,15 @@ impl DimensionsWindows {
     }
 }
 
-impl GetDimensionsSearchString for DimensionsWindows {
+impl GetDimensionsSearchString for DimensionsWindowsLinux {
     fn get_height_bytes(height: u32) -> Vec<u8>
     {
-        DimensionsWindows::get_dimensions_search_string(186, height)
+        DimensionsWindowsLinux::get_dimensions_search_string(186, height)
     }
 
     fn get_width_bytes(width: u32) -> Vec<u8>
     {
-        DimensionsWindows::get_dimensions_search_string(185, width)
+        DimensionsWindowsLinux::get_dimensions_search_string(185, width)
     }
 }
 
@@ -67,5 +67,4 @@ impl GetDimensionsSearchString for DimensionsMac
         DimensionsMac::get_dimensions_search_string(0x66, 0xb8, width as u16)
     }
 }
-
 

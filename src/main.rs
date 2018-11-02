@@ -3,7 +3,7 @@ mod util;
 mod umineko_change_resolution;
 extern crate clap;
 
-use umineko_change_resolution::{ScreenResolution, DimensionsWindows, DimensionsMac, GetDimensionsSearchString};
+use umineko_change_resolution::{ScreenResolution, DimensionsWindowsLinux, DimensionsMac, GetDimensionsSearchString};
 use std::fs::File;
 use std::io::prelude::*;
 use std::str::FromStr;
@@ -84,14 +84,15 @@ fn main()
     let input_file = matches.value_of("input").expect("Missing input file argument");
     let output_file = matches.value_of("output").expect("Missing output file argument");
 
-    //determine if the input file is a Windows or Mac/linux file by file extension
-    let file_extension = Path::new(input_file).extension().and_then(OsStr::to_str);
-    let is_windows = match file_extension {
-        Some(extension) => extension == "exe",
-        None => false,
+    //determine if the input file is a (Windows/linux) or Mac filename
+    let is_mac =  match Path::new(input_file).file_name().and_then(OsStr::to_str)
+    {
+        Some("umineko4") => true, //linux exe
+        Some("umineko8") => true,
+        _ => false,
     };
 
-    println!("Is Windows:{} (file ext:{:?})", is_windows, file_extension);
+    println!("Is Mac Exe:{} (Note: win and linux patched in same way. Mac patched differently)", is_mac);
 
     let mut file_as_bytes = read_file_as_bytes(input_file).expect("could open input file");
 
@@ -116,10 +117,10 @@ fn main()
             );
 
             println!("Performing Resolution Patch: [{}x{}] -> [{}x{}]...", search.width, search.height, replace.width, replace.height);
-            if is_windows {
-                umineko_change_width::<DimensionsWindows>(&mut file_as_bytes, &search, &replace);
-            } else {
+            if is_mac {
                 umineko_change_width::<DimensionsMac>(&mut file_as_bytes, &search, &replace);
+            } else {
+                umineko_change_width::<DimensionsWindowsLinux>(&mut file_as_bytes, &search, &replace);
             }
 
         }
