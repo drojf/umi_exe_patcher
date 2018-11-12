@@ -28,10 +28,15 @@ fn umineko_change_width<T: GetDimensionsSearchString>(file_as_bytes : &mut Vec<u
     let replacement_height = T::get_height_bytes(replacement_dimensions.height);
 
     let search_width = T::get_width_bytes(search_dimension.width);
-    let replacement_width = T::get_width_bytes(search_dimension.width);
+    let replacement_width = T::get_width_bytes(replacement_dimensions.width);
 
     find_and_replace_once(file_as_bytes, &search_height, &replacement_height).expect("failed to replace HEIGHT");
     find_and_replace_once(file_as_bytes, &search_width, &replacement_width)  .expect("failed to replace WIDTH");
+}
+
+fn umineko_video(file_as_bytes : &mut Vec<u8>) {
+
+
 }
 
 fn main()
@@ -77,6 +82,9 @@ fn main()
                                            .takes_value(true)
                                            .required(true))
                           )
+                          .subcommand(SubCommand::with_name("video")
+                              .about("Disables 2x video scaling (NOT REVERSIBLE)")
+                          )
                           .get_matches();
 
 
@@ -99,32 +107,33 @@ fn main()
     println!("File size is {} bytes", file_as_bytes.len());
 
     //Execute subcommands:
-    match matches.subcommand_matches("resolution")
+    if let Some(submatches) = matches.subcommand_matches("resolution")
     {
-        Some(submatches) => {
-            let searches : Vec<_> = submatches.values_of("search_resolution").unwrap().collect();
+        let searches : Vec<_> = submatches.values_of("search_resolution").unwrap().collect();
 
-            let search = ScreenResolution::new(
-                u32::from_str(searches[0]).expect("Search width could not be parsed"),
-                u32::from_str(searches[1]).expect("Search height could not be parsed")
-            );
+        let search = ScreenResolution::new(
+            u32::from_str(searches[0]).expect("Search width could not be parsed"),
+            u32::from_str(searches[1]).expect("Search height could not be parsed")
+        );
 
-            let replacements : Vec<_> = submatches.values_of("replacement_resolution").unwrap().collect();
+        let replacements : Vec<_> = submatches.values_of("replacement_resolution").unwrap().collect();
 
-            let replace = ScreenResolution::new(
-                u32::from_str(replacements[0]).expect("Replace width could not be parsed"),
-                u32::from_str(replacements[1]).expect("Replace height could not be parsed")
-            );
+        let replace = ScreenResolution::new(
+            u32::from_str(replacements[0]).expect("Replace width could not be parsed"),
+            u32::from_str(replacements[1]).expect("Replace height could not be parsed")
+        );
 
-            println!("Performing Resolution Patch: [{}x{}] -> [{}x{}]...", search.width, search.height, replace.width, replace.height);
-            if is_mac {
-                umineko_change_width::<DimensionsMac>(&mut file_as_bytes, &search, &replace);
-            } else {
-                umineko_change_width::<DimensionsWindowsLinux>(&mut file_as_bytes, &search, &replace);
-            }
-
+        println!("Performing Resolution Patch: [{}x{}] -> [{}x{}]...", search.width, search.height, replace.width, replace.height);
+        if is_mac {
+            umineko_change_width::<DimensionsMac>(&mut file_as_bytes, &search, &replace);
+        } else {
+            umineko_change_width::<DimensionsWindowsLinux>(&mut file_as_bytes, &search, &replace);
         }
-        None => {}
+    }
+
+    if let Some(submatches) = matches.subcommand_matches("video")
+    {
+
     }
 
     let mut output_file = File::create(output_file).expect("couldn't open output file");
